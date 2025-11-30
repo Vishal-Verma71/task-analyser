@@ -1,6 +1,6 @@
 
 
-# ✅ **Smart Task Analyzer **
+# ✅ **Smart Task Analyzer**
 
 ### **Submitted by:** Vishal Verma
 
