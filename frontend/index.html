@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Smart Task Analyzer</title>
+  <link rel="stylesheet" href="styles.css" />
+  <script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+</head>
+<body>
+
+  <div class="app-shell">
+    <!-- Top Header -->
+    <header class="app-header">
+      <div>
+        <h1 class="app-title">Task Dashboard</h1>
+        <p class="app-subtitle">Plan, prioritize and analyze your workload intelligently.</p>
+      </div>
+      <button id="openAddTaskBtn" class="btn btn-primary">+ Add Task</button>
+    </header>
+
+    <main class="app-main">
+      <!-- Incomplete Tasks card -->
+      <section class="card">
+        <div class="card-header">
+          <h2 class="card-title">Incomplete Tasks</h2>
+        </div>
+        <ul id="taskList" class="task-list">
+          <!-- Filled by script.js -->
+        </ul>
+      </section>
+
+      <!-- Strategy & Results card -->
+      <section class="card">
+        <div class="card-header card-header--row">
+          <div>
+            <h2 class="card-title">Strategy & Analysis</h2>
+            <p class="card-subtitle">Choose a strategy and view detailed task scores.</p>
+          </div>
+          <div class="strategy-controls">
+            <label for="strategy" class="field-label">Strategy</label>
+            <select id="strategy" class="select">
+              <option value="smart_balance">Smart Balance</option>
+              <option value="fastest_wins">Fastest Wins</option>
+              <option value="high_impact">High Impact</option>
+              <option value="deadline_driven">Deadline Driven</option>
+            </select>
+            <button id="analyzeBtn" class="btn btn-primary">Analyze</button>
+            <button id="suggestBtn" class="btn btn-secondary">Suggest Top 3</button>
+          </div>
+        </div>
+
+        <div class="button-row">
+          <button id="graphBtn" class="btn btn-outline">Dependency Graph</button>
+          <button id="matrixBtn" class="btn btn-outline">Priority Matrix</button>
+          <button id="feedbackHelpfulBtn" class="btn btn-ghost">Suggestions Helpful 👍</button>
+          <button id="feedbackNotHelpfulBtn" class="btn btn-ghost">Suggestions Not Helpful 👎</button>
+          <button id="clearAllBtn" class="btn btn-danger btn-small">Clear All Tasks</button>
+        </div>
+
+        <div id="resultsContainer" class="results-list"></div>
+      </section>
+
+      <!-- Graph card -->
+      <section class="card">
+        <h2 class="card-title">Dependency Graph</h2>
+        <div id="graphContainer" class="graph-container"></div>
+      </section>
+
+      <!-- Matrix card -->
+      <section class="card">
+        <h2 class="card-title">Priority Matrix</h2>
+        <div id="matrixContainer" class="matrix-grid">
+          <div id="urgentImportant" class="matrix-cell matrix-cell--urgent-important">
+            <h3>Do First (Urgent + Important)</h3>
+            <div class="matrix-list"></div>
+          </div>
+
+          <div id="urgentNotImportant" class="matrix-cell matrix-cell--urgent-not-important">
+            <h3>Delegate (Urgent + Not Important)</h3>
+            <div class="matrix-list"></div>
+          </div>
+
+          <div id="notUrgentImportant" class="matrix-cell matrix-cell--not-urgent-important">
+            <h3>Schedule (Not Urgent + Important)</h3>
+            <div class="matrix-list"></div>
+          </div>
+
+          <div id="notUrgentNotImportant" class="matrix-cell matrix-cell--not-urgent-not-important">
+            <h3>Eliminate (Not Urgent + Not Important)</h3>
+            <div class="matrix-list"></div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- ADD TASK MODAL -->
+  <div id="addTaskModal" class="modal">
+    <div class="modal-content modal-content--wide">
+      <div class="modal-header">
+        <h3>Create Task</h3>
+        <button id="closeAddTaskModal" class="icon-button">&times;</button>
+      </div>
+
+      <!-- SAME IDs so JS & backend still work -->
+      <form id="taskForm" class="form">
+        <div class="form-row">
+          <label for="title" class="field-label">Task Title *</label>
+          <input type="text" id="title" class="input" placeholder="e.g. Finish report" required />
+        </div>
+
+        <div class="form-row">
+          <label for="due_date" class="field-label">Due Date</label>
+          <input type="date" id="due_date" class="input" />
+        </div>
+
+        <div class="form-row">
+          <label for="estimated_hours" class="field-label">Estimated Hours *</label>
+          <input type="number" id="estimated_hours" class="input" placeholder="e.g. 2" />
+        </div>
+
+        <div class="form-row">
+          <label for="importance" class="field-label">Importance (1–10) *</label>
+          <input type="number" id="importance" class="input" min="1" max="10" placeholder="1–10" />
+        </div>
+
+        <!-- Dependency checkbox list -->
+        <div class="form-row">
+          <label class="field-label">Dependencies</label>
+          <div id="dependencyList" class="dependency-list">
+            <!-- checkboxes injected by JS -->
+          </div>
+          <p class="field-help">
+            Select the tasks that must be completed before this one.
+          </p>
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" id="cancelAddTask" class="btn btn-ghost">Cancel</button>
+          <button type="submit" class="btn btn-primary">Create Task</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- EDIT TASK MODAL -->
+  <div id="editModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Edit Task</h3>
+        <button id="closeModal" class="icon-button">&times;</button>
+      </div>
+
+      <div class="form">
+        <div class="form-row">
+          <label class="field-label">Title</label>
+          <input type="text" id="edit_title" class="input">
+        </div>
+
+        <div class="form-row">
+          <label class="field-label">Due Date</label>
+          <input type="date" id="edit_due_date" class="input">
+        </div>
+
+        <div class="form-row">
+          <label class="field-label">Estimated Hours</label>
+          <input type="number" id="edit_estimated_hours" class="input" placeholder="e.g. 2">
+        </div>
+
+        <div class="form-row">
+          <label class="field-label">Importance (1–10)</label>
+          <input type="number" id="edit_importance" class="input" min="1" max="10">
+        </div>
+
+        <div class="form-row">
+          <label class="field-label">Dependencies (comma-separated IDs)</label>
+          <input type="text" id="edit_dependencies" class="input">
+        </div>
+
+        <button id="saveTaskBtn" class="btn btn-primary btn-block">Save Changes</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
